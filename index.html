@@ -7,7 +7,31 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-shell">
+  <section class="auth-gate" id="authGate" aria-label="Login">
+    <div class="auth-card">
+      <span class="brand-mark auth-mark" aria-hidden="true"></span>
+      <p class="eyebrow">Privater Zugang</p>
+      <h1 id="authTitle">Darts Gegner Datenbank</h1>
+      <p id="authIntro">Lege beim ersten Start ein Passwort fest. Danach bleibt deine Datenbank gesperrt, bis du dich einloggst.</p>
+
+      <form id="authForm" class="auth-form">
+        <label>
+          <span id="authPasswordLabel">Passwort</span>
+          <input id="authPassword" type="password" autocomplete="current-password" required>
+        </label>
+        <label id="authConfirmWrap">
+          <span>Passwort wiederholen</span>
+          <input id="authPasswordConfirm" type="password" autocomplete="new-password">
+        </label>
+        <button class="button primary" id="authSubmitButton" type="submit">Passwort festlegen</button>
+      </form>
+
+      <p class="auth-message" id="authMessage" role="status"></p>
+      <p class="auth-note">Wichtig: JSON-Backups mit Gegnerdaten nicht oeffentlich auf GitHub hochladen.</p>
+    </div>
+  </section>
+
+  <div class="app-shell locked" id="appShell">
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"></span>
@@ -20,6 +44,7 @@
       <div class="top-actions">
         <button class="button ghost" type="button" id="quickExportButton">JSON Export</button>
         <button class="button primary" type="button" id="quickImportButton">JSON Import</button>
+        <button class="button secondary" type="button" id="logoutButton">Sperren</button>
       </div>
     </header>
 

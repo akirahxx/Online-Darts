@@ -2,6 +2,8 @@
   "use strict";
 
   const STORAGE_KEY = "rdl-darts-gegner-db-v1";
+  const AUTH_KEY = "rdl-darts-auth-v1";
+  const AUTH_SESSION_KEY = "rdl-darts-auth-session-v1";
 
   const opponentFieldTypes = {
     age: "number",
@@ -43,7 +45,8 @@
     editingMatchId: null,
     selectedProfileId: null,
     leaderboardSort: "wins",
-    leaderboardDirection: "desc"
+    leaderboardDirection: "desc",
+    authMode: "setup"
   };
 
   const els = {};
@@ -53,11 +56,22 @@
   function init() {
     cacheElements();
     bindEvents();
-    setDefaultMatchDate();
-    renderAll();
+    initializeAuth();
   }
 
   function cacheElements() {
+    els.appShell = document.getElementById("appShell");
+    els.authGate = document.getElementById("authGate");
+    els.authForm = document.getElementById("authForm");
+    els.authTitle = document.getElementById("authTitle");
+    els.authIntro = document.getElementById("authIntro");
+    els.authPasswordLabel = document.getElementById("authPasswordLabel");
+    els.authPassword = document.getElementById("authPassword");
+    els.authConfirmWrap = document.getElementById("authConfirmWrap");
+    els.authPasswordConfirm = document.getElementById("authPasswordConfirm");
+    els.authSubmitButton = document.getElementById("authSubmitButton");
+    els.authMessage = document.getElementById("authMessage");
+
     els.panels = document.querySelectorAll("[data-panel]");
     els.tabButtons = document.querySelectorAll(".tab-button");
     els.dashboardStats = document.getElementById("dashboardStats");
@@ -104,6 +118,7 @@
 
     els.quickExportButton = document.getElementById("quickExportButton");
     els.quickImportButton = document.getElementById("quickImportButton");
+    els.logoutButton = document.getElementById("logoutButton");
     els.exportButton = document.getElementById("exportButton");
     els.importButton = document.getElementById("importButton");
     els.importFileInput = document.getElementById("importFileInput");
@@ -111,6 +126,8 @@
   }
 
   function bindEvents() {
+    els.authForm.addEventListener("submit", handleAuthSubmit);
+
     els.tabButtons.forEach((button) => {
       button.addEventListener("click", () => showSection(button.dataset.section));
     });
@@ -188,6 +205,169 @@
     els.importButton.addEventListener("click", () => els.importFileInput.click());
     els.importFileInput.addEventListener("change", importData);
     els.resetButton.addEventListener("click", resetAllData);
+    els.logoutButton.addEventListener("click", lockApp);
+  }
+
+  function initializeAuth() {
+    const config = getAuthConfig();
+    if (!config) {
+      showAuthSetup();
+      return;
+    }
+
+    if (sessionStorage.getItem(AUTH_SESSION_KEY) === "unlocked") {
+      unlockApp();
+      return;
+    }
+
+    showAuthLogin();
+  }
+
+  function showAuthSetup() {
+    app.authMode = "setup";
+    els.authTitle.textContent = "Passwort festlegen";
+    els.authIntro.textContent = "Dieses Passwort schuetzt die App in diesem Browser vor neugierigen Blicken.";
+    els.authPasswordLabel.textContent = "Neues Passwort";
+    els.authPassword.autocomplete = "new-password";
+    els.authPassword.value = "";
+    els.authPasswordConfirm.value = "";
+    els.authConfirmWrap.classList.remove("visually-hidden");
+    els.authPasswordConfirm.required = true;
+    els.authSubmitButton.textContent = "Passwort festlegen";
+    setAuthMessage("");
+    showAuthGate();
+  }
+
+  function showAuthLogin() {
+    app.authMode = "login";
+    els.authTitle.textContent = "Login";
+    els.authIntro.textContent = "Gib dein Passwort ein, um deine Darts Gegner Datenbank zu oeffnen.";
+    els.authPasswordLabel.textContent = "Passwort";
+    els.authPassword.autocomplete = "current-password";
+    els.authPassword.value = "";
+    els.authPasswordConfirm.value = "";
+    els.authConfirmWrap.classList.add("visually-hidden");
+    els.authPasswordConfirm.required = false;
+    els.authSubmitButton.textContent = "Einloggen";
+    setAuthMessage("");
+    showAuthGate();
+  }
+
+  function showAuthGate() {
+    els.appShell.classList.add("locked");
+    els.authGate.classList.remove("hidden");
+    window.setTimeout(() => els.authPassword.focus(), 0);
+  }
+
+  async function handleAuthSubmit(event) {
+    event.preventDefault();
+    const password = els.authPassword.value;
+
+    if (password.length < 4) {
+      setAuthMessage("Bitte mindestens 4 Zeichen verwenden.");
+      return;
+    }
+
+    if (app.authMode === "setup") {
+      if (password !== els.authPasswordConfirm.value) {
+        setAuthMessage("Die Passwoerter stimmen nicht ueberein.");
+        return;
+      }
+      const salt = createSalt();
+      const result = await hashPassword(password, salt);
+      localStorage.setItem(AUTH_KEY, JSON.stringify({
+        algorithm: result.algorithm,
+        salt,
+        hash: result.hash,
+        createdAt: new Date().toISOString()
+      }));
+      sessionStorage.setItem(AUTH_SESSION_KEY, "unlocked");
+      unlockApp();
+      return;
+    }
+
+    const config = getAuthConfig();
+    if (!config) {
+      showAuthSetup();
+      return;
+    }
+
+    const result = await hashPassword(password, config.salt, config.algorithm);
+    if (result.hash !== config.hash) {
+      setAuthMessage("Passwort stimmt nicht.");
+      els.authPassword.select();
+      return;
+    }
+
+    sessionStorage.setItem(AUTH_SESSION_KEY, "unlocked");
+    unlockApp();
+  }
+
+  function unlockApp() {
+    els.authGate.classList.add("hidden");
+    els.appShell.classList.remove("locked");
+    setDefaultMatchDate();
+    renderAll();
+  }
+
+  function lockApp() {
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    showAuthLogin();
+  }
+
+  function setAuthMessage(message) {
+    els.authMessage.textContent = message;
+  }
+
+  function getAuthConfig() {
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function createSalt() {
+    if (window.crypto?.getRandomValues) {
+      const bytes = new Uint8Array(16);
+      window.crypto.getRandomValues(bytes);
+      return base64FromBytes(bytes);
+    }
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  async function hashPassword(password, salt, preferredAlgorithm = "auto") {
+    if ((preferredAlgorithm === "auto" || preferredAlgorithm === "sha256") && window.crypto?.subtle) {
+      const input = new TextEncoder().encode(`${salt}:${password}`);
+      const hashBuffer = await window.crypto.subtle.digest("SHA-256", input);
+      return {
+        algorithm: "sha256",
+        hash: base64FromBytes(new Uint8Array(hashBuffer))
+      };
+    }
+
+    return {
+      algorithm: "simple",
+      hash: simpleHash(`${salt}:${password}`)
+    };
+  }
+
+  function base64FromBytes(bytes) {
+    let text = "";
+    bytes.forEach((byte) => {
+      text += String.fromCharCode(byte);
+    });
+    return btoa(text);
+  }
+
+  function simpleHash(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16);
   }
 
   function loadData() {

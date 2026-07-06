@@ -59,6 +59,65 @@ button {
   padding: 20px;
 }
 
+.app-shell.locked {
+  display: none;
+}
+
+.auth-gate {
+  display: grid;
+  min-height: 100vh;
+  padding: 22px;
+  place-items: center;
+}
+
+.auth-gate.hidden {
+  display: none;
+}
+
+.auth-card {
+  width: min(100%, 440px);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 26px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.014)), var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.auth-mark {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 5vw, 2.5rem);
+  line-height: 1;
+}
+
+.auth-card p {
+  color: var(--muted);
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.auth-message {
+  min-height: 22px;
+  margin: 12px 0 0;
+  color: var(--orange);
+  font-weight: 760;
+}
+
+.auth-note {
+  margin: 14px 0 0;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+  font-size: 0.86rem;
+}
+
 .topbar {
   position: sticky;
   top: 0;
