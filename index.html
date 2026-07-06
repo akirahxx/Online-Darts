@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Darts Performance Hub</title>
+  <link rel="stylesheet" href="style.css?v=hub-1">
+</head>
+<body>
+  <section class="auth-gate" id="authGate" aria-label="Login">
+    <div class="auth-card">
+      <span class="brand-mark auth-mark" aria-hidden="true"></span>
+      <p class="eyebrow">Privater Zugang</p>
+      <h1 id="authTitle">Darts Performance Hub</h1>
+      <p id="authIntro">Lege beim ersten Start ein Passwort fest. Danach bleibt deine Datenbank gesperrt, bis du dich einloggst.</p>
+
+      <form id="authForm" class="auth-form">
+        <label>
+          <span id="authPasswordLabel">Passwort</span>
+          <input id="authPassword" type="password" autocomplete="current-password" required>
+        </label>
+        <label id="authConfirmWrap">
+          <span>Passwort wiederholen</span>
+          <input id="authPasswordConfirm" type="password" autocomplete="new-password">
+        </label>
+        <button class="button primary" id="authSubmitButton" type="submit">Passwort festlegen</button>
+      </form>
+
+      <p class="auth-message" id="authMessage" role="status"></p>
+      <p class="auth-note">Wichtig: JSON-Backups mit Gegnerdaten nicht oeffentlich auf GitHub hochladen.</p>
+    </div>
+  </section>
+
+  <div class="app-shell locked" id="appShell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <span class="brand-kicker">Persoenliche Darts Performance App</span>
+          <h1>Darts Performance Hub</h1>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button class="button ghost" type="button" id="quickExportButton">JSON Export</button>
+        <button class="button primary" type="button" id="quickImportButton">JSON Import</button>
+        <button class="button secondary" type="button" id="logoutButton">Sperren</button>
+      </div>
+    </header>
+
+    <nav class="main-tabs" aria-label="Hauptbereiche">
+      <button class="tab-button active" type="button" data-section="dashboard">Dashboard</button>
+      <button class="tab-button" type="button" data-section="matches">Spiele</button>
+      <button class="tab-button" type="button" data-section="opponents">Gegner</button>
+      <button class="tab-button" type="button" data-section="training">Training</button>
+      <button class="tab-button" type="button" data-section="mygame">Setups</button>
+      <button class="tab-button" type="button" data-section="stats">Statistik</button>
+      <button class="tab-button" type="button" data-section="analysis">Analyse</button>
+      <button class="tab-button" type="button" data-section="leaderboard">Rangliste</button>
+      <button class="tab-button" type="button" data-section="data">Einstellungen</button>
+    </nav>
+
+    <main>
+      <section class="screen active" id="dashboard" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Dashboard</p>
+            <h2>Darts Performance Hub</h2>
+          </div>
+          <button class="button primary" type="button" data-jump="matches">Spiel eintragen</button>
+        </div>
+
+        <div class="stat-grid" id="dashboardStats"></div>
+
+        <div class="filter-bar" aria-label="Suche und Filter">
+          <label>
+            <span>Gegner suchen</span>
+            <input type="search" id="globalSearch" placeholder="Name, Spitzname oder Ort">
+          </label>
+          <label>
+            <span>Season</span>
+            <select id="seasonFilter">
+              <option value="">Alle Seasons</option>
+            </select>
+          </label>
+          <label>
+            <span>Ergebnis</span>
+            <select id="resultFilter">
+              <option value="">Alle Ergebnisse</option>
+              <option value="win">Sieg</option>
+              <option value="draw">Unentschieden</option>
+              <option value="loss">Niederlage</option>
+            </select>
+          </label>
+          <label>
+            <span>Kategorie</span>
+            <select id="categoryFilter">
+              <option value="">Alle</option>
+              <option value="liga">Liga</option>
+              <option value="cup">Cup</option>
+              <option value="both">Liga + Cup</option>
+            </select>
+          </label>
+          <label>
+            <span>AVG von</span>
+            <input type="number" id="avgMinFilter" min="0" step="0.01" placeholder="z. B. 45">
+          </label>
+          <label>
+            <span>AVG bis</span>
+            <input type="number" id="avgMaxFilter" min="0" step="0.01" placeholder="z. B. 70">
+          </label>
+          <label>
+            <span>Seasons</span>
+            <select id="seasonsPlayedFilter">
+              <option value="">Alle</option>
+              <option value="1">ab 1</option>
+              <option value="2">ab 2</option>
+              <option value="3">ab 3</option>
+              <option value="5">ab 5</option>
+            </select>
+          </label>
+          <button class="button secondary" type="button" id="clearFiltersButton">Filter loeschen</button>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="table-panel">
+            <div class="panel-heading">
+              <h3>Gegner Schnellzugriff</h3>
+              <div class="panel-tools">
+                <label class="compact-select inline-select">
+                  <span>Sortieren</span>
+                  <select id="quickSortSelect">
+                    <option value="avg-desc">AVG hoch</option>
+                    <option value="avg-asc">AVG niedrig</option>
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="double-desc">Doppelquote</option>
+                    <option value="winrate-desc">Siegquote</option>
+                    <option value="legdiff-desc">Leg-Differenz</option>
+                    <option value="last-desc">Letztes Spiel</option>
+                  </select>
+                </label>
+                <span id="quickCount" class="count-pill">0 Gegner</span>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>AVG</th>
+                    <th>Doppelquote</th>
+                    <th>Bilanz</th>
+                    <th>Letztes Spiel</th>
+                    <th>Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody id="opponentQuickTable"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="training-widget">
+            <div class="panel-heading">
+              <h3>Training</h3>
+              <span class="count-pill" id="trainingWidgetCount">0 Legs</span>
+            </div>
+            <div class="training-widget-body">
+              <div>
+                <span>Bestes 501 AVG</span>
+                <strong id="trainingWidgetBest">-</strong>
+              </div>
+              <div>
+                <span>Letztes Ergebnis</span>
+                <strong id="trainingWidgetLast">-</strong>
+              </div>
+              <button class="button primary" type="button" data-jump="training">Training starten</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="screen" id="training" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Training</p>
+            <h2>501 Double Out</h2>
+          </div>
+          <button class="button primary" type="button" id="startTrainingGameButton">Neues Leg starten</button>
+        </div>
+
+        <div class="training-layout">
+          <div class="training-board">
+            <div class="panel-heading">
+              <h3>Match gegen Computer</h3>
+              <span class="state-pill" id="trainingGameState">Bereit</span>
+            </div>
+
+            <div class="training-controls">
+              <label>
+                <span>Computer-Gegner</span>
+                <select id="trainingOpponentSelect"></select>
+              </label>
+              <label>
+                <span>Startscore</span>
+                <select id="trainingStartScore">
+                  <option value="501">501</option>
+                  <option value="301">301</option>
+                  <option value="701">701</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="scoreboard">
+              <div class="score-box player">
+                <span>Du</span>
+                <strong id="trainingPlayerScore">501</strong>
+                <small id="trainingPlayerMeta">AVG -</small>
+              </div>
+              <div class="score-box computer">
+                <span>Computer</span>
+                <strong id="trainingComputerScore">501</strong>
+                <small id="trainingComputerMeta">AVG -</small>
+              </div>
+            </div>
+
+            <form class="training-throw-form" id="trainingThrowForm">
+              <label>
+                <span>Punkte deiner Aufnahme</span>
+                <input id="trainingVisitScore" type="number" min="0" max="180" step="1" placeholder="z. B. 60">
+              </label>
+              <label class="check-field">
+                <input id="trainingDoubleOut" type="checkbox">
+                <span>Checkout auf Doppel getroffen</span>
+              </label>
+              <div class="form-actions">
+                <button class="button primary" type="submit">Aufnahme speichern</button>
+                <button class="button secondary" type="button" id="trainingBustButton">Bust</button>
+              </div>
+            </form>
+
+            <div class="training-feedback" id="trainingFeedback">Starte ein Leg und spiele deine Aufnahmen wie im Match ein.</div>
+            <div class="training-log" id="trainingLog"></div>
+          </div>
+
+          <div class="training-side">
+            <div class="stat-grid training-stat-grid" id="trainingStatsGrid"></div>
+
+            <div class="training-practice-grid">
+              <form class="data-block" id="doublePracticeForm">
+                <h3>Doppeltraining</h3>
+                <label>
+                  <span>Doppel</span>
+                  <select name="target">
+                    <option value="D20">D20</option>
+                    <option value="D18">D18</option>
+                    <option value="D16">D16</option>
+                    <option value="D10">D10</option>
+                    <option value="D8">D8</option>
+                  </select>
+                </label>
+                <div class="mini-form-grid">
+                  <label>
+                    <span>Versuche</span>
+                    <input name="attempts" type="number" min="1" step="1">
+                  </label>
+                  <label>
+                    <span>Treffer</span>
+                    <input name="hits" type="number" min="0" step="1">
+                  </label>
+                </div>
+                <button class="button secondary" type="submit">Einheit speichern</button>
+              </form>
+
+              <form class="data-block" id="scoringPracticeForm">
+                <h3>Scoring Check</h3>
+                <div class="mini-form-grid">
+                  <label>
+                    <span>Aufnahmen</span>
+                    <input name="visits" type="number" min="1" step="1">
+                  </label>
+                  <label>
+                    <span>Punkte gesamt</span>
+                    <input name="points" type="number" min="0" step="1">
+                  </label>
+                </div>
+                <button class="button secondary" type="submit">Scoring speichern</button>
+              </form>
+            </div>
+
+            <div class="table-panel">
+              <div class="panel-heading">
+                <h3>Trainingshistorie</h3>
+                <span class="count-pill" id="trainingHistoryCount">0 Einheiten</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Datum</th>
+                      <th>Training</th>
+                      <th>Ergebnis</th>
+                      <th>AVG / Quote</th>
+                      <th>Aktion</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trainingHistoryTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="mygame" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Setups</p>
+            <h2>Material und Auswertung</h2>
+          </div>
+          <button class="button primary" type="button" data-jump="analysis">Analyse ansehen</button>
+        </div>
+
+        <div class="stat-grid" id="myGameStatsGrid"></div>
+
+        <div class="workspace-grid">
+          <form class="form-panel" id="setupForm">
+            <div class="panel-heading">
+              <h3>Setup speichern</h3>
+              <span class="state-pill">Darts</span>
+            </div>
+            <div class="form-grid">
+              <label>
+                <span>Setup Name</span>
+                <input name="name" required placeholder="z. B. 23g Match Setup">
+              </label>
+              <label>
+                <span>Barrel</span>
+                <input name="barrel" placeholder="z. B. Target Bolide">
+              </label>
+              <label>
+                <span>Gewicht</span>
+                <input name="weight" type="number" min="0" step="0.1" placeholder="Gramm">
+              </label>
+              <label>
+                <span>Shaft</span>
+                <input name="shaft" placeholder="Kurz, Medium, Carbon ...">
+              </label>
+              <label>
+                <span>Flight</span>
+                <input name="flight" placeholder="Standard, Shape, No.6 ...">
+              </label>
+              <label>
+                <span>Spitzen</span>
+                <input name="points" placeholder="z. B. 35 mm Swiss Point">
+              </label>
+              <label>
+                <span>Status</span>
+                <select name="active">
+                  <option value="true">Aktiv</option>
+                  <option value="false">Archiviert</option>
+                </select>
+              </label>
+            </div>
+            <label class="wide-field">
+              <span>Notizen zum Setup</span>
+              <textarea name="notes" rows="3"></textarea>
+            </label>
+            <div class="form-actions">
+              <button class="button primary" type="submit" id="setupSubmitButton">Setup speichern</button>
+              <button class="button secondary" type="button" id="cancelSetupEditButton">Abbrechen</button>
+            </div>
+          </form>
+
+          <div class="table-panel">
+            <div class="panel-heading">
+              <h3>Meine Setups</h3>
+              <span class="count-pill" id="setupCount">0 Setups</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Details</th>
+                    <th>Status</th>
+                    <th>Spiele</th>
+                    <th>AVG</th>
+                    <th>Doppelquote</th>
+                    <th>Siegquote</th>
+                    <th>Gefuehl</th>
+                    <th>Aktion</th>
+                  </tr>
+                </thead>
+                <tbody id="setupTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="opponents" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Gegner</p>
+            <h2>Profile verwalten</h2>
+          </div>
+          <button class="button secondary" type="button" id="newOpponentButton">Neuer Gegner</button>
+        </div>
+
+        <div class="workspace-grid">
+          <form class="form-panel" id="opponentForm">
+            <div class="panel-heading">
+              <h3 id="opponentFormTitle">Gegner anlegen</h3>
+              <span class="state-pill" id="opponentEditState">Neu</span>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                <span>Name</span>
+                <input name="name" required autocomplete="off">
+              </label>
+              <label>
+                <span>Spitzname</span>
+                <input name="nickname" autocomplete="off">
+              </label>
+              <label>
+                <span>RDL-Name</span>
+                <input name="rdlName" autocomplete="off" placeholder="Falls anders als Name">
+              </label>
+              <label>
+                <span>Kategorie</span>
+                <select name="category">
+                  <option value="liga">Liga</option>
+                  <option value="cup">Cup</option>
+                  <option value="both">Liga + Cup</option>
+                </select>
+              </label>
+              <label>
+                <span>Alter</span>
+                <input name="age" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>Heimatort</span>
+                <input name="hometown" autocomplete="off">
+              </label>
+              <label>
+                <span>Team</span>
+                <input name="team" autocomplete="off" placeholder="Optional">
+              </label>
+              <label>
+                <span>Liga</span>
+                <input name="league" autocomplete="off" placeholder="z. B. League 5e">
+              </label>
+              <label>
+                <span>Spieltempo</span>
+                <select name="pace">
+                  <option value="">Nicht bekannt</option>
+                  <option value="langsam">Langsam</option>
+                  <option value="mittel">Mittel</option>
+                  <option value="schnell">Schnell</option>
+                </select>
+              </label>
+              <label>
+                <span>Darts Gewicht</span>
+                <input name="dartWeight" type="number" min="0" step="0.1" placeholder="Gramm">
+              </label>
+              <label>
+                <span>Lieblings Doppel</span>
+                <input name="favoriteDouble" placeholder="z. B. D16" autocomplete="off">
+              </label>
+              <label>
+                <span>Gespielte Seasons</span>
+                <input name="seasonsPlayed" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>Average</span>
+                <input name="average" type="number" min="0" step="0.01">
+              </label>
+              <label>
+                <span>Doppelquote</span>
+                <input name="doubleRate" type="number" min="0" max="100" step="0.1" placeholder="%">
+              </label>
+              <label>
+                <span>First 9 Average</span>
+                <input name="first9Average" type="number" min="0" step="0.01">
+              </label>
+              <label>
+                <span>Shortleg</span>
+                <input name="shortleg" type="number" min="0" step="1" placeholder="Legs">
+              </label>
+              <label>
+                <span>Tons Plus</span>
+                <input name="tonsPlus" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>140 Plus</span>
+                <input name="oneFortyPlus" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>180er</span>
+                <input name="oneEighties" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>High Finish</span>
+                <input name="highFinish" type="number" min="0" max="170" step="1">
+              </label>
+              <label>
+                <span>Scoring-Staerke</span>
+                <input name="scoringStrength" type="number" min="1" max="10" step="1" placeholder="1-10">
+              </label>
+              <label>
+                <span>Doppel-Staerke</span>
+                <input name="doubleStrength" type="number" min="1" max="10" step="1" placeholder="1-10">
+              </label>
+              <label>
+                <span>Mentale Staerke</span>
+                <input name="mentalStrength" type="number" min="1" max="10" step="1" placeholder="1-10">
+              </label>
+            </div>
+
+            <label class="wide-field">
+              <span>Notizen zum Gegner</span>
+              <textarea name="notes" rows="3"></textarea>
+            </label>
+            <label class="wide-field">
+              <span>Staerken des Gegners</span>
+              <textarea name="strengths" rows="3"></textarea>
+            </label>
+            <label class="wide-field">
+              <span>Schwaechen des Gegners</span>
+              <textarea name="weaknesses" rows="3"></textarea>
+            </label>
+            <label class="wide-field">
+              <span>Taktische Hinweise gegen diesen Gegner</span>
+              <textarea name="tactics" rows="3"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button class="button primary" type="submit" id="opponentSubmitButton">Gegner speichern</button>
+              <button class="button secondary" type="button" id="cancelOpponentEditButton">Abbrechen</button>
+            </div>
+          </form>
+
+          <div class="list-panel">
+            <div class="panel-heading">
+              <h3>Alle Gegner</h3>
+              <span id="opponentCount" class="count-pill">0 Gegner</span>
+            </div>
+            <div class="compact-search">
+              <input type="search" id="opponentListSearch" placeholder="Liste durchsuchen">
+            </div>
+            <div class="opponent-list" id="opponentList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="profile" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Gegnerprofil</p>
+            <h2 id="profileTitle">Profil</h2>
+          </div>
+          <div class="button-row">
+            <button class="button secondary" type="button" data-jump="opponents">Zurueck</button>
+            <button class="button primary" type="button" id="profileAddMatchButton">Spiel gegen Gegner</button>
+          </div>
+        </div>
+        <div id="profileContent"></div>
+      </section>
+
+      <section class="screen" id="matches" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Spiele</p>
+            <h2>Matches eintragen</h2>
+          </div>
+          <button class="button secondary" type="button" id="newMatchButton">Neues Spiel</button>
+        </div>
+
+        <div class="workspace-grid">
+          <form class="form-panel" id="matchForm">
+            <div class="panel-heading">
+              <h3 id="matchFormTitle">Spiel speichern</h3>
+              <span class="state-pill" id="matchEditState">Neu</span>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                <span>Datum</span>
+                <input name="date" type="date" required>
+              </label>
+              <label>
+                <span>Season</span>
+                <input name="season" required placeholder="z. B. 2026/27" autocomplete="off">
+              </label>
+              <label>
+                <span>Wettbewerb</span>
+                <select name="competition">
+                  <option value="Liga">Liga</option>
+                  <option value="Cup">Cup</option>
+                  <option value="Turnier">Turnier / Event</option>
+                  <option value="Training">Training</option>
+                  <option value="Freundschaftsspiel">Freundschaftsspiel</option>
+                </select>
+              </label>
+              <label>
+                <span>Eventname</span>
+                <input name="eventName" placeholder="z. B. RDL, Cup, Sommercup" autocomplete="off">
+              </label>
+              <label>
+                <span>Gegner</span>
+                <select name="opponentId" id="matchOpponentSelect" required>
+                  <option value="">Gegner waehlen</option>
+                </select>
+              </label>
+              <label>
+                <span>Setup</span>
+                <select name="setupId" id="matchSetupSelect">
+                  <option value="">Kein Setup gewaehlt</option>
+                </select>
+              </label>
+              <label>
+                <span>Endstand</span>
+                <input name="score" placeholder="4:2, 3:3 oder 1:5" autocomplete="off">
+              </label>
+              <label>
+                <span>Gewonnene Legs</span>
+                <input name="legsWon" type="number" min="0" max="6" step="1">
+              </label>
+              <label>
+                <span>Verlorene Legs</span>
+                <input name="legsLost" type="number" min="0" max="6" step="1">
+              </label>
+              <label>
+                <span>Mein Average</span>
+                <input name="myAverage" type="number" min="0" step="0.01">
+              </label>
+              <label>
+                <span>First 9 Average</span>
+                <input name="first9Average" type="number" min="0" step="0.01">
+              </label>
+              <label>
+                <span>Gegner Average</span>
+                <input name="opponentAverage" type="number" min="0" step="0.01">
+              </label>
+              <label>
+                <span>Meine Doppelquote</span>
+                <input name="myDoubleRate" type="number" min="0" max="100" step="0.1" placeholder="%">
+              </label>
+              <label>
+                <span>Gegner Doppelquote</span>
+                <input name="opponentDoubleRate" type="number" min="0" max="100" step="0.1" placeholder="%">
+              </label>
+              <label>
+                <span>100+</span>
+                <input name="scores100Plus" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>140+</span>
+                <input name="scores140Plus" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>Meine 180er</span>
+                <input name="my180s" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>Gegner 180er</span>
+                <input name="opponent180s" type="number" min="0" step="1">
+              </label>
+              <label>
+                <span>Mein High Finish</span>
+                <input name="myHighFinish" type="number" min="0" max="170" step="1">
+              </label>
+              <label>
+                <span>Gegner High Finish</span>
+                <input name="opponentHighFinish" type="number" min="0" max="170" step="1">
+              </label>
+              <label>
+                <span>Bestes Leg</span>
+                <input name="bestLeg" type="number" min="0" step="1" placeholder="Darts">
+              </label>
+              <label>
+                <span>Schlechtestes Leg</span>
+                <input name="worstLeg" type="number" min="0" step="1" placeholder="Darts">
+              </label>
+            </div>
+
+            <div class="result-preview" id="matchResultPreview">Ergebnis: noch nicht berechnet</div>
+
+            <div class="analysis-input-panel">
+              <div class="panel-heading compact-heading">
+                <h3>Spielstatistik Screenshot</h3>
+                <span class="count-pill">Optional</span>
+              </div>
+              <label class="wide-field">
+                <span>Screenshot hochladen</span>
+                <input id="matchScreenshotInput" type="file" accept="image/*">
+              </label>
+              <div class="screenshot-preview empty" id="matchScreenshotPreview">Kein Screenshot gespeichert</div>
+              <div class="form-actions">
+                <button class="button secondary" type="button" id="removeMatchScreenshotButton">Screenshot entfernen</button>
+              </div>
+            </div>
+
+            <div class="analysis-input-panel">
+              <div class="panel-heading compact-heading">
+                <h3>Mentale Matchanalyse</h3>
+                <span class="count-pill">Optional</span>
+              </div>
+              <div class="form-grid">
+                <label>
+                  <span>Nervositaet vor dem Spiel</span>
+                  <input name="nervousBefore" type="number" min="1" max="10" step="1" placeholder="1-10">
+                </label>
+                <label>
+                  <span>Nervositaet waehrend des Spiels</span>
+                  <input name="nervousDuring" type="number" min="1" max="10" step="1" placeholder="1-10">
+                </label>
+                <label>
+                  <span>Wurfgefuehl</span>
+                  <input name="throwFeeling" type="number" min="1" max="10" step="1" placeholder="1-10">
+                </label>
+                <label>
+                  <span>Konzentration</span>
+                  <input name="concentration" type="number" min="1" max="10" step="1" placeholder="1-10">
+                </label>
+                <label>
+                  <span>Zufriedenheit</span>
+                  <input name="satisfaction" type="number" min="1" max="10" step="1" placeholder="1-10">
+                </label>
+                <label>
+                  <span>Groesstes Problem</span>
+                  <select name="problemArea">
+                    <option value="">Nicht angegeben</option>
+                    <option value="scoring">Scoring</option>
+                    <option value="checkout">Doppel / Checkout</option>
+                    <option value="kopf">Kopf / Nervositaet</option>
+                    <option value="rhythmus">Rhythmus</option>
+                    <option value="gegnerdruck">Gegnerdruck</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Wann wurde es schlechter?</span>
+                  <select name="dropPhase">
+                    <option value="">Nicht angegeben</option>
+                    <option value="start">Start</option>
+                    <option value="mitte">Mitte</option>
+                    <option value="ende">Ende</option>
+                    <option value="gar-nicht">Gar nicht</option>
+                  </select>
+                </label>
+              </div>
+              <label class="wide-field">
+                <span>Was ist dir waehrend des Spiels aufgefallen?</span>
+                <textarea name="matchObservation" rows="3" placeholder="z. B. Am Anfang nervoes, Scoring gut, Doppel schwach."></textarea>
+              </label>
+            </div>
+
+            <div class="analysis-input-panel">
+              <div class="panel-heading compact-heading">
+                <h3>Legverlauf</h3>
+                <span class="count-pill">Best of 6</span>
+              </div>
+              <div class="leg-grid">
+                <label>
+                  <span>Leg 1</span>
+                  <select name="leg1">
+                    <option value="">-</option>
+                    <option value="win">Gewonnen</option>
+                    <option value="loss">Verloren</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Leg 2</span>
+                  <select name="leg2">
+                    <option value="">-</option>
+                    <option value="win">Gewonnen</option>
+                    <option value="loss">Verloren</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Leg 3</span>
+                  <select name="leg3">
+                    <option value="">-</option>
+                    <option value="win">Gewonnen</option>
+                    <option value="loss">Verloren</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Leg 4</span>
+                  <select name="leg4">
+                    <option value="">-</option>
+                    <option value="win">Gewonnen</option>
+                    <option value="loss">Verloren</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Leg 5</span>
+                  <select name="leg5">
+                    <option value="">-</option>
+                    <option value="win">Gewonnen</option>
+                    <option value="loss">Verloren</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Leg 6</span>
+                  <select name="leg6">
+                    <option value="">-</option>
+                    <option value="win">Gewonnen</option>
+                    <option value="loss">Verloren</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <label class="wide-field">
+              <span>Besondere Auffaelligkeiten im Spiel</span>
+              <textarea name="observations" rows="3"></textarea>
+            </label>
+            <label class="wide-field">
+              <span>Kurze Spielnotiz</span>
+              <textarea name="note" rows="3"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button class="button primary" type="submit" id="matchSubmitButton">Spiel speichern</button>
+              <button class="button secondary" type="button" id="cancelMatchEditButton">Abbrechen</button>
+            </div>
+          </form>
+
+          <div class="table-panel">
+            <div class="panel-heading">
+              <h3>Spielhistorie</h3>
+              <span id="matchCount" class="count-pill">0 Spiele</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Datum</th>
+                    <th>Wettbewerb</th>
+                    <th>Season</th>
+                    <th>Gegner</th>
+                    <th>Endstand</th>
+                    <th>Ergebnis</th>
+                    <th>AVG</th>
+                    <th>Doppelquote</th>
+                    <th>Screenshot</th>
+                    <th>Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody id="matchTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="stats" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Statistik</p>
+            <h2>Automatische Auswertung</h2>
+          </div>
+          <label class="compact-select">
+            <span>Season</span>
+            <select id="statsSeasonFilter">
+              <option value="">Alle Seasons</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="stat-grid expanded" id="statsGrid"></div>
+      </section>
+
+      <section class="screen" id="leaderboard" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Rangliste</p>
+            <h2>Bilanz nach Gegner</h2>
+          </div>
+          <div class="leader-controls">
+            <label class="compact-select">
+              <span>Season</span>
+              <select id="leaderboardSeasonFilter">
+                <option value="">Alle Seasons</option>
+              </select>
+            </label>
+            <label class="compact-select">
+              <span>Sortierung</span>
+              <select id="leaderboardSortSelect">
+                <option value="wins">Siege</option>
+                <option value="winRate">Siegquote</option>
+                <option value="legDiff">Leg Differenz</option>
+                <option value="average">Average</option>
+                <option value="games">Spiele</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="table-panel">
+          <div class="table-wrap">
+            <table class="sortable-table">
+              <thead>
+                <tr>
+                  <th><button type="button" data-sort-key="rank">Platz</button></th>
+                  <th><button type="button" data-sort-key="name">Name</button></th>
+                  <th><button type="button" data-sort-key="games">Spiele</button></th>
+                  <th><button type="button" data-sort-key="wins">Siege</button></th>
+                  <th><button type="button" data-sort-key="draws">Unentschieden</button></th>
+                  <th><button type="button" data-sort-key="losses">Niederlagen</button></th>
+                  <th><button type="button" data-sort-key="legsWon">Gew. Legs</button></th>
+                  <th><button type="button" data-sort-key="legsLost">Verl. Legs</button></th>
+                  <th><button type="button" data-sort-key="legDiff">Leg Diff.</button></th>
+                  <th><button type="button" data-sort-key="winRate">Siegquote</button></th>
+                  <th><button type="button" data-sort-key="average">Average</button></th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="analysis" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Analyse</p>
+            <h2>Dein Darts Analyst</h2>
+          </div>
+          <button class="button secondary" type="button" data-jump="matches">Spiel mit Analyse eintragen</button>
+        </div>
+
+        <div class="stat-grid expanded" id="analysisStatsGrid"></div>
+
+        <div class="analysis-layout">
+          <section class="analysis-panel">
+            <div class="panel-heading">
+              <h3>Coach-Hinweise</h3>
+              <span class="count-pill" id="analysisInsightCount">0 Hinweise</span>
+            </div>
+            <div class="insight-list" id="analysisInsights"></div>
+          </section>
+
+          <section class="analysis-panel">
+            <div class="panel-heading">
+              <h3>Performance Report</h3>
+              <span class="count-pill">Automatisch</span>
+            </div>
+            <div class="performance-report" id="performanceReport"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen" id="data" data-panel>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Einstellungen</p>
+            <h2>Sichern, Importieren und Schutz</h2>
+          </div>
+        </div>
+
+        <div class="data-actions">
+          <div class="data-block">
+            <h3>JSON Sicherung</h3>
+            <p>Exportiere Gegner, Spiele, Setups, Training und Analysewerte als Datei.</p>
+            <button class="button primary" type="button" id="exportButton">Alle Daten exportieren</button>
+          </div>
+          <div class="data-block">
+            <h3>JSON Import</h3>
+            <p>Importierte Daten ersetzen den aktuellen Stand nach deiner Bestaetigung.</p>
+            <button class="button secondary" type="button" id="importButton">JSON Datei importieren</button>
+          </div>
+          <div class="data-block danger-zone">
+            <h3>Daten zuruecksetzen</h3>
+            <p>Loescht alle lokal gespeicherten Gegner, Spiele, Setups und Trainingsdaten in diesem Browser.</p>
+            <button class="button danger" type="button" id="resetButton">Alle Daten loeschen</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <input class="visually-hidden" id="importFileInput" type="file" accept="application/json">
+
+  <script src="script.js?v=hub-1" defer></script>
+</body>
+</html>
